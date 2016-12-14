@@ -26,7 +26,7 @@ def readadc12(adcnum):
 while True:
   # HUMIDITY
   try:
-    for x in range(0, 1):
+    for x in range(0, 4):
       value = readadc12(x)
       logvalue("H" + str(x), 4095 - value)
       time.sleep(0.5)
