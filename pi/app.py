@@ -2,12 +2,17 @@
 
 import spidev
 import time
+import urllib2
 
 spi = spidev.SpiDev()
 spi.open(0, 0)
 
 print "Plant Waterer 8000"
 
+def logvalue(name, value):
+  data = "name=%s&value=%g" % (name, value)
+  r = urllib2.urlopen("http://plants.mecha.parts/data/add", data).read().strip()
+  print "%s -> %s" % (data, r)
 
 def readadc12(adcnum):
   if adcnum > 7 or adcnum < 0:
@@ -18,8 +23,10 @@ def readadc12(adcnum):
   return a
 
 while True:
-  for x in range(0, 8):
+  # HUMIDITY
+  for x in range(0, 1):
     value = readadc12(x)
-    print "V%d=%d" % (x, value)
+    logvalue("H" + str(x), 4095 - value)
     time.sleep(0.5)
+  time.sleep(60)
 
