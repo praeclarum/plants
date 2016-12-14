@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import sys
 import spidev
 import time
 import urllib2
@@ -24,9 +25,12 @@ def readadc12(adcnum):
 
 while True:
   # HUMIDITY
-  for x in range(0, 1):
-    value = readadc12(x)
-    logvalue("H" + str(x), 4095 - value)
-    time.sleep(0.5)
+  try:
+    for x in range(0, 1):
+      value = readadc12(x)
+      logvalue("H" + str(x), 4095 - value)
+      time.sleep(0.5)
+  except:
+    print "Unexpected error:", sys.exc_info()[0]
   time.sleep(60)
 
