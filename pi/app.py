@@ -27,7 +27,7 @@ def setInterval(interval):
 # Setup Valve GPIO
 #
 GPIO.setmode(GPIO.BCM)
-VALVE_GPIO = 17
+VALVE_GPIO = 21
 VALVE_STATE = False
 GPIO.setup(VALVE_GPIO, GPIO.OUT)
 GPIO.output(VALVE_GPIO, False)
@@ -81,5 +81,5 @@ while True:
   except:
     print "Unexpected error:", sys.exc_info()[0]
     #raise
-  time.sleep(60)
+  time.sleep(5*60)
 
