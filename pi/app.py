@@ -4,6 +4,7 @@ import sys
 import threading
 import spidev
 import time
+import datetime
 import urllib2
 import urllib
 import RPi.GPIO as GPIO
@@ -28,19 +29,39 @@ def setInterval(interval):
 #
 GPIO.setmode(GPIO.BCM)
 VALVE_GPIO = 21
+VALVE_ONDUR = 10.0
+VALVE_DUTYCYCLE = 0.333
 VALVE_STATE = False
+VALVE_ONDT = datetime.datetime.now()
 GPIO.setup(VALVE_GPIO, GPIO.OUT)
-GPIO.output(VALVE_GPIO, False)
+GPIO.output(VALVE_GPIO, VALVE_STATE)
 
-def setValve(state):
-  global VALVE_STATE
-  VALVE_STATE = state
-  GPIO.output(VALVE_GPIO, VALVE_STATE)
+#
+# Water the plants when they need it
+#
+
+PLANT_AVG_WATER = 4095.0
+PLANT_NEEDS_WATER = 3000.0
 
 @setInterval(2.0)
 def toggleValve():
   global VALVE_STATE
-  setValve(not VALVE_STATE)
+  global VALVE_ONDT, VALVE_ONDUR, VALVE_DUTYCYCLE
+  now = datetime.datetime.now()
+  dt = (now - VALVE_ONDT).total_seconds()
+  if VALVE_STATE:
+    print "IT'S ON", dt
+    if dt > VALVE_ONDUR:
+      VALVE_STATE = False
+  else:
+    print "IT'S OFF", dt
+    need = PLANT_AVG_WATER <= PLANT_NEEDS_WATER
+    print "NEED", need
+    if need and dt > VALVE_ONDUR / VALVE_DUTYCYCLE:
+      VALVE_STATE = True
+      VALVE_ONDT = now
+  GPIO.output(VALVE_GPIO, VALVE_STATE)
+  #setValve(not VALVE_STATE)
   #print "T=", VALVE_STATE
 
 stopValve = toggleValve()
