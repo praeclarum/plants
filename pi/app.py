@@ -41,30 +41,30 @@ GPIO.output(VALVE_GPIO, VALVE_STATE)
 #
 
 PLANT_AVG_WATER = 4095.0
-PLANT_NEEDS_WATER = 3000.0
+PLANT_NEEDS_WATER = 3100.0
 
 @setInterval(2.0)
-def toggleValve():
+def cycleValve():
   global VALVE_STATE
   global VALVE_ONDT, VALVE_ONDUR, VALVE_DUTYCYCLE
   now = datetime.datetime.now()
   dt = (now - VALVE_ONDT).total_seconds()
   if VALVE_STATE:
-    print "IT'S ON", dt
+    #print "IT'S ON", dt
     if dt > VALVE_ONDUR:
+      print "VALVE OFF"
       VALVE_STATE = False
   else:
-    print "IT'S OFF", dt
+    #print "IT'S OFF", dt
     need = PLANT_AVG_WATER <= PLANT_NEEDS_WATER
-    print "NEED", need
+    #print "NEED", need
     if need and dt > VALVE_ONDUR / VALVE_DUTYCYCLE:
+      print "VALVE ON (%g/%g)" % (PLANT_AVG_WATER, PLANT_NEEDS_WATER)
       VALVE_STATE = True
       VALVE_ONDT = now
   GPIO.output(VALVE_GPIO, VALVE_STATE)
-  #setValve(not VALVE_STATE)
-  #print "T=", VALVE_STATE
 
-stopValve = toggleValve()
+stopValve = cycleValve()
 
 #
 # Setup SPI
@@ -87,20 +87,30 @@ def readadc12(adcnum):
   a = ((r[1] & 15) << 8) + r[2]
   return a
 
-lastValveOnTime = time.localtime()
+lastLogTime = datetime.datetime(1970, 1, 1)
 while True:
   # HUMIDITY
   try:
+    # READ SENSORS
     now = time.localtime()
+    dtnow = datetime.datetime.now()
+    log = (dtnow - lastLogTime).total_seconds() > 5*60
+    if log:
+      lastLogTime = dtnow
     t = time.strftime("%Y-%m-%d %H:%M:%S", now)
-    print "TIME", t
-    for x in range(0, 4):
-      value = readadc12(x)
-      logvalue("H" + str(x), 4095 - value, t)
+    if log: print "TIME", t
+    c = 4
+    s = 0.0
+    for x in range(0, c):
+      value = 4095 - readadc12(x)
+      s += value
+      if log: logvalue("H" + str(x), value, t)
       time.sleep(0.5)
-    logvalue("V", 1 if VALVE_STATE else 0, t)
+    PLANT_AVG_WATER = s / c
+    #print "AVG", PLANT_AVG_WATER
+    if log: logvalue("V", 1 if VALVE_STATE else 0, t)
   except:
     print "Unexpected error:", sys.exc_info()[0]
     #raise
-  time.sleep(5*60)
+  time.sleep(1)
 
