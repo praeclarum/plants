@@ -29,8 +29,8 @@ def setInterval(interval):
 #
 GPIO.setmode(GPIO.BCM)
 VALVE_GPIO = 21
-VALVE_ONDUR = 10.0
-VALVE_DUTYCYCLE = 0.333
+VALVE_ONDUR = 2.0
+VALVE_OFFDUR = 4*60.0
 VALVE_STATE = False
 VALVE_ONDT = datetime.datetime.now()
 GPIO.setup(VALVE_GPIO, GPIO.OUT)
@@ -41,25 +41,25 @@ GPIO.output(VALVE_GPIO, VALVE_STATE)
 #
 
 PLANT_AVG_WATER = 4095.0
-PLANT_NEEDS_WATER = 3100.0
+PLANT_NEEDS_WATER = 2500.0
+PLANT_NEED = False
 
-@setInterval(2.0)
+@setInterval(0.5)
 def cycleValve():
   global VALVE_STATE
-  global VALVE_ONDT, VALVE_ONDUR, VALVE_DUTYCYCLE
+  global VALVE_ONDT, VALVE_ONDUR, VALVE_OFFDUR
+  global PLANT_NEED
   now = datetime.datetime.now()
   dt = (now - VALVE_ONDT).total_seconds()
   if VALVE_STATE:
     #print "IT'S ON", dt
     if dt > VALVE_ONDUR:
-      print "VALVE OFF"
+      print now, "VALVE OFF"
       VALVE_STATE = False
   else:
-    #print "IT'S OFF", dt
-    need = PLANT_AVG_WATER <= PLANT_NEEDS_WATER
-    #print "NEED", need
-    if need and dt > VALVE_ONDUR / VALVE_DUTYCYCLE:
-      print "VALVE ON (%g/%g)" % (PLANT_AVG_WATER, PLANT_NEEDS_WATER)
+    #print "IT'S OFF", dt, "NEED", PLANT_NEED
+    if PLANT_NEED and dt > VALVE_ONDUR + VALVE_OFFDUR:
+      print now, "VALVE ON (%g/%g)" % (PLANT_AVG_WATER, PLANT_NEEDS_WATER)
       VALVE_STATE = True
       VALVE_ONDT = now
   GPIO.output(VALVE_GPIO, VALVE_STATE)
@@ -99,7 +99,7 @@ while True:
       lastLogTime = dtnow
     t = time.strftime("%Y-%m-%d %H:%M:%S", now)
     if log: print "TIME", t
-    c = 4
+    c = 3
     s = 0.0
     for x in range(0, c):
       value = 4095 - readadc12(x)
@@ -108,7 +108,8 @@ while True:
       time.sleep(0.5)
     PLANT_AVG_WATER = s / c
     #print "AVG", PLANT_AVG_WATER
-    if log: logvalue("V", 1 if VALVE_STATE else 0, t)
+    PLANT_NEED = PLANT_AVG_WATER <= PLANT_NEEDS_WATER
+    if log: logvalue("V", PLANT_NEEDS_WATER if PLANT_NEED else 0, t)
   except:
     print "Unexpected error:", sys.exc_info()[0]
     #raise
