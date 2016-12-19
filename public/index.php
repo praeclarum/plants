@@ -99,7 +99,7 @@ duration: <select id="dur" name="dur">
 document.getElementById('dur').value = <?php echo json_encode($dur); ?>;
 </script>
 </form>
-<form>
+<form action="cals/update" method="POST">
 <table>
 <tbody>
 <?php
