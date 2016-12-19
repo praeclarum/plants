@@ -99,6 +99,19 @@ duration: <select id="dur" name="dur">
 document.getElementById('dur').value = <?php echo json_encode($dur); ?>;
 </script>
 </form>
+<form>
+<table>
+<tbody>
+<?php
+$stmt = $pdo->prepare("SELECT * FROM Cal ORDER BY name ASC");
+$stmt->execute(array('name' => $name, 'dur' => $dur));
+for ($i=0; $r = $stmt->fetch(); $i++) {
+  echo '<tr><th>'.$r['name'].'</th><td><input type="text" name="'.$r['name'].'" value="'.$r['value'].'" />';
+}
+?>
+</tbody></table>
+<input type="submit" value="update cals" />
+</form>
 <section style="display:none">
 <h1>Add Data</h1>
 <form action="data/add" method="POST">
