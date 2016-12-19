@@ -1,0 +1,8 @@
+<?php
+
+$db_host = 'localhost';
+$db_username = 'PUT DB USERNAME HERE';
+$db_password = 'PUT DB PASSWORD HERE';
+$db_name = 'PUT DB NAME HERE';
+
+?>
