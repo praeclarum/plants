@@ -7,6 +7,7 @@ import time
 import datetime
 import urllib2
 import urllib
+import json
 import RPi.GPIO as GPIO
 
 # From: http://stackoverflow.com/a/16368571/338
@@ -74,6 +75,17 @@ spi.open(0, 0)
 
 print "Plant Waterer 8000"
 
+def getcals():
+  global PLANT_NEEDS_WATER, VALVE_ONDUR, VALVE_OFFDUR
+  try:
+    cals = json.loads(urllib2.urlopen("http://plants.mecha.parts/cals").read())
+    if u'MinWetness' in cals: PLANT_NEEDS_WATER = cals[u'MinWetness']
+    if u'ValveOffSeconds' in cals: VALVE_OFFDUR = cals[u'ValveOffSeconds']
+    if u'ValveOnSeconds' in cals: VALVE_ONDUR = cals[u'ValveOnSeconds']
+    print "Loaded Cals", cals
+  except:
+    print "FAILED TO GET CALS"
+
 def logvalue(name, value, tim):
   data = urllib.urlencode({'name':name, 'value':value, 'time': tim})
   r = urllib2.urlopen("http://plants.mecha.parts/data/add", data).read().strip()
@@ -87,6 +99,7 @@ def readadc12(adcnum):
   a = ((r[1] & 15) << 8) + r[2]
   return a
 
+getcals()
 lastLogTime = datetime.datetime(1970, 1, 1)
 while True:
   # HUMIDITY
@@ -110,6 +123,8 @@ while True:
     #print "AVG", PLANT_AVG_WATER
     PLANT_NEED = PLANT_AVG_WATER <= PLANT_NEEDS_WATER
     if log: logvalue("V", PLANT_NEEDS_WATER if PLANT_NEED else 0, t)
+    if log: getcals()
+    if log: sys.stdout.flush()
   except:
     print "Unexpected error:", sys.exc_info()[0]
     #raise
