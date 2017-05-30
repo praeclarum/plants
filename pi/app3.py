@@ -23,23 +23,11 @@ SENSOR_RELAY_GPIO = 37 #// K2 Blue
 FAN_RELAY_GPIO = 29 #// K3 Yellow
 LIGHT_RELAY_GPIO = 31 #// K4 Orange
 
-VALVE_RELAY = 0 
-SENSOR_RELAY = 0 
-FAN_RELAY = 1 
-LIGHT_RELAY = 1 
-
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(VALVE_RELAY_GPIO, GPIO.OUT)
 GPIO.setup(SENSOR_RELAY_GPIO, GPIO.OUT)
 GPIO.setup(FAN_RELAY_GPIO, GPIO.OUT)
 GPIO.setup(LIGHT_RELAY_GPIO, GPIO.OUT)
-
-def output():
-  GPIO.output(VALVE_RELAY_GPIO, VALVE_RELAY)
-  GPIO.output(SENSOR_RELAY_GPIO, SENSOR_RELAY)
-  GPIO.output(FAN_RELAY_GPIO, FAN_RELAY)
-  GPIO.output(LIGHT_RELAY_GPIO, LIGHT_RELAY)
-
 
 
 #
@@ -79,11 +67,35 @@ class Plants(blocks.Application):
   def __init__(self):
     super(Plants,self).__init__("plants")
     self.camera_directory = "/home/pi/weed/cat/static"
-  def run(self):
-    a = gettemp(readadc12(3))
-    print "Temperature=", a, " F"
+    self.temperature = self.append_var("temperature", \
+            70.0, "F", min_value=30.0, max_value=110.0, step=10.0, \
+            variable_type=blocks.VariableType.OUTPUT)
+    self.fans = self.append_var("fans", \
+            1.0, "bool", min_value=0.0, max_value=1.0, step=1.0, \
+            variable_type=blocks.VariableType.OUTPUT)
+    self.lights = self.append_var("lights", \
+            1.0, "bool", min_value=0.0, max_value=1.0, step=1.0, \
+            variable_type=blocks.VariableType.OUTPUT)
+    self.lights_on_time = self.append_var("lights_on_time", \
+            6.0, "hours", min_value=4.0, max_value=10.0, step=1.0, \
+            variable_type=blocks.VariableType.INPUT)
+    self.lights_on_duration = self.append_var("lights_on_duration", \
+            18.0, "hours", min_value=12.0, max_value=20.0, step=1.0, \
+            variable_type=blocks.VariableType.INPUT)
 
+  def run(self):
+    self.temperature.set_value(gettemp(readadc12(3)))
+    self.fans.set_value(1.0 if self.temperature.value() > 70.0 else 0.0)
+    local_time = time.localtime()
+    hours = local_time.tm_min/60.0 + local_time.tm_hour
+    on_time = hours - self.lights_on_time.value()
+    self.lights.set_value(1.0 if on_time > 0.0 and on_time < self.lights_on_duration.value() else 0.0)
     yield 3.0
+  def update(self):
+    #GPIO.output(VALVE_RELAY_GPIO, VALVE_RELAY)
+    #GPIO.output(SENSOR_RELAY_GPIO, SENSOR_RELAY)
+    GPIO.output(FAN_RELAY_GPIO, self.fans.value() > 0)
+    GPIO.output(LIGHT_RELAY_GPIO, self.lights.value() > 0)
 
 blocks.start(Plants(), debug_web = False)
 
