@@ -66,7 +66,7 @@ def gettemp(analog):
 class Plants(blocks.Application):
   def __init__(self):
     super(Plants,self).__init__("plants")
-    self.camera_directory = "/home/pi/weed/cat/static"
+    self.camera.directory = "/home/pi/weed/pi/static"
     self.temperature = self.append_var("temperature", \
             70.0, "F", min_value=30.0, max_value=110.0, step=10.0, \
             variable_type=blocks.VariableType.OUTPUT)
